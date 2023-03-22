@@ -1,0 +1,189 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
+
+<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+  
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script> -->
+
+
+
+<style>
+    /* Center the loader */
+    #loader {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 1;
+      width: 120px;
+      height: 120px;
+      margin: -76px 0 0 -76px;
+      border: 16px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 16px solid #3498db;
+      -webkit-animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite;
+    }
+    
+    @-webkit-keyframes spin {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Add animation to "page content" */
+    .animate-bottom {
+      position: relative;
+      -webkit-animation-name: animatebottom;
+      -webkit-animation-duration: 1s;
+      animation-name: animatebottom;
+      animation-duration: 1s
+    }
+    
+    @-webkit-keyframes animatebottom {
+      from { bottom:-100px; opacity:0 } 
+      to { bottom:0px; opacity:1 }
+    }
+    
+    @keyframes animatebottom { 
+      from{ bottom:-100px; opacity:0 } 
+      to{ bottom:0; opacity:1 }
+    }
+    
+</style>
+
+<div id="loader"></div>
+
+<form enctype="multipart/form-data">
+  <input id="upload" type=file name="files[]">
+</form>
+
+  <button onclick = "jsonToTable()">
+    JSON to table
+  </button>
+  <button onclick = "showLoad()">
+    show load
+  </button>
+  <button onclick = "hideLoad()">
+    hide load
+  </button>
+  <table align = "center"
+    id="table" border="1">
+  </table>
+
+<textarea class="form-control" rows=35 cols=120 id="xlx_json"></textarea>
+
+<script>
+
+    document.getElementById('upload').addEventListener('change', handleFileSelect, false);
+    
+    var list = [];
+    
+   function handleFileSelect(evt) {
+ 
+     showLoad();
+ 
+     var files = evt.target.files; // FileList object
+ 
+ 
+     var reader = new FileReader();
+ 
+     reader.readAsBinaryString(files[0]);
+ 
+     reader.onload = function(e) {
+ 
+         var data = e.target.result;
+         //every thing is binary
+         var workbook = XLSX.read(data, {
+             type: 'binary'
+         });
+         workbook.SheetNames.forEach(function(sheetName) {
+             // Here is your object
+             var XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
+             var json_object = JSON.stringify(XL_row_object);
+             list = JSON.parse(json_object)
+             console.log(list);
+             jQuery('#xlx_json').val(json_object);
+             hideLoad()
+         })
+ 
+         
+     };
+ 
+     reader.onerror = function(ex) {
+         console.log(ex);
+     };
+   }
+ 
+    function jsonToTable() {
+        showLoad();
+        const res = setTimeout(()=>{
+            constructTable();
+            hideLoad();
+        },100)
+         
+     }
+ 
+     function constructTable() {
+            
+             console.log(list, '#table');
+             // Getting the all column names
+             var cols = Headers(list, '#table'); 
+   
+             // Traversing the JSON data
+             for (var i = 0; i < list.length; i++) {
+                 var row = $('<tr/>');  
+                 for (var colIndex = 0; colIndex < cols.length; colIndex++)
+                 {
+                     var val = list[i][cols[colIndex]];
+                      
+                     // If there is any key, which is matching
+                     // with the column name
+                     if (val == null) val = ""; 
+                         row.append($('<td/>').html(val));
+                 }
+                  
+                 // Adding each row to the table
+                 $('#table').append(row);
+             }
+
+
+         }
+          
+     function Headers(list, selector) {
+         var columns = [];
+         var header = $('<tr/>');
+             
+         for (var i = 0; i < list.length; i++) {
+             var row = list[i];
+                 
+             for (var k in row) {
+                 if ($.inArray(k, columns) == -1) {
+                     columns.push(k);
+                         
+                     // Creating the header
+                     header.append($('<th/>').html(k));
+                 }
+             }
+         }
+             
+         // Appending the header to the table
+         $(selector).append(header);
+             return columns;
+     }
+ 
+ 
+     function hideLoad() {
+        $('#loader').css("display","none");
+     }
+ 
+     function showLoad() {
+         $('#loader').css("display","block");
+     }
+ 
+ </script>
